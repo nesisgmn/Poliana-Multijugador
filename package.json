@@ -1,0 +1,8 @@
+{
+  "name": "poliana-multijugador",
+  "version": "1.0.0",
+  "description": "Poliana en línea para jugar con amigos",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "ws": "^8.18.0" }
+}

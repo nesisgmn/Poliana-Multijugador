@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Poliana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: dark;
+  --ink:#06040b; --line:rgba(182,109,255,.26); --neon:#c084ff; --text:#ece6f8; --mute:#9889b5;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(ellipse 80% 55% at 50% 0%, #2a1250 0%, var(--ink) 62%) fixed, var(--ink); color:var(--text); font-family:'Manrope',system-ui,sans-serif; display:flex; justify-content:center}
+main{width:100%; max-width:660px; padding:24px 12px 34px; display:flex; flex-direction:column; gap:16px}
+header{display:flex; justify-content:space-between; align-items:center; gap:12px}
+h1{margin:0; font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:2.4rem; letter-spacing:.04em; color:#f3e9ff; text-shadow:0 0 6px rgba(192,132,255,.9),0 0 22px rgba(139,92,246,.8),0 0 48px rgba(139,92,246,.5)}
+#code{border:1px solid var(--neon); border-radius:999px; padding:5px 14px; font-weight:600; letter-spacing:.12em; box-shadow:0 0 12px rgba(192,132,255,.4)}
+button,input{font:inherit; color:var(--text); background:transparent; border:1px solid var(--line); border-radius:999px; padding:9px 18px}
+button{font-weight:500; cursor:pointer; transition:border-color .2s, box-shadow .2s}
+button:hover:not(:disabled){border-color:var(--neon); box-shadow:0 0 14px rgba(192,132,255,.45)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--neon); outline-offset:3px}
+button:disabled{opacity:.3; cursor:not-allowed}
+input{text-align:center; min-width:0}
+.on{border-color:var(--neon)!important; box-shadow:0 0 12px rgba(192,132,255,.5)}
+.main{background:linear-gradient(135deg,#7c3aed,#a855f7); border-color:transparent; box-shadow:0 0 18px rgba(139,92,246,.55); padding:11px 28px}
+.card{border:1px solid var(--line); border-radius:20px; padding:22px 18px; display:flex; flex-direction:column; align-items:center; gap:14px; background:rgba(12,7,20,.8); text-align:center}
+.card small,#err{color:var(--mute); font-size:.85rem}
+#err{color:#ff8fd0; min-height:1.2em}
+.row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+[hidden]{display:none!important}
+#board{display:grid; grid-template-columns:repeat(15,1fr); grid-template-rows:repeat(15,1fr); gap:3px; aspect-ratio:1; padding:8px; border:1px solid var(--line); border-radius:20px; background:rgba(12,7,20,.8)}
+.cell{border:1px solid var(--line); border-radius:6px; background:#120a1f; position:relative; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0}
+.cell i{position:absolute; top:2px; left:3px; font-size:.55rem; color:var(--mute); font-style:normal; line-height:1}
+.toks{display:flex; flex-wrap:wrap; gap:1px; justify-content:center; align-items:center; max-width:100%}
+.cell.col{border-color:var(--c); box-shadow:inset 0 0 9px color-mix(in srgb,var(--c) 45%,transparent)}
+.cell.col i{color:var(--c)}
+.quad{border:1px solid color-mix(in srgb,var(--c) 45%,transparent); border-radius:14px; padding:6px; display:flex; flex-direction:column; gap:6px; background:linear-gradient(160deg,color-mix(in srgb,var(--c) 10%,#0d0716),#0a0612); min-width:0; min-height:0; transition:box-shadow .4s}
+.quad.act{box-shadow:0 0 22px color-mix(in srgb,var(--c) 60%,transparent), inset 0 0 14px color-mix(in srgb,var(--c) 18%,transparent)}
+.celda{display:flex; gap:4px; justify-content:center; align-items:center; flex:0 0 26%}
+.slot{flex:1; aspect-ratio:1; max-width:34px; border:1px dashed color-mix(in srgb,var(--c) 55%,transparent); border-radius:50%; display:flex; align-items:center; justify-content:center; min-width:0}
+.casa{flex:1; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:3px; min-height:0}
+.hc{border-color:color-mix(in srgb,var(--c) 50%,transparent)}
+.hc i{color:var(--c)}
+.hc.goal{box-shadow:inset 0 0 10px var(--c)}
+.tk{display:block; width:10px; height:10px; border-radius:50%; box-shadow:0 0 7px currentColor}
+.tk.done{opacity:.55}
+.tk.can{width:14px; height:14px; cursor:pointer; outline:2px solid #fff; outline-offset:1px; animation:pul 1.1s ease-in-out infinite}
+@keyframes pul{50%{outline-color:transparent; transform:scale(1.15)}}
+#bowl{grid-column:7 / span 3; grid-row:7 / span 3; clip-path:polygon(50% 0,75% 6.7%,93.3% 25%,100% 50%,93.3% 75%,75% 93.3%,50% 100%,25% 93.3%,6.7% 75%,0 50%,6.7% 25%,25% 6.7%); background:radial-gradient(circle,#05030a 52%,#4c1d95 100%); display:flex; align-items:center; justify-content:center; gap:8%}
+.die{width:36%; aspect-ratio:1; border:1px solid var(--neon); border-radius:10px; background:#150d22; display:grid; place-items:center; font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:clamp(1rem,5vw,1.9rem); box-shadow:0 0 12px rgba(192,132,255,.55)}
+.die.used{opacity:.35}
+.die.roll{animation:shake .45s}
+@keyframes shake{20%{transform:rotate(-16deg)}50%{transform:rotate(14deg)}80%{transform:rotate(-6deg)}}
+#msg{text-align:center; min-height:1.7em; font-family:'Cormorant Garamond',Georgia,serif; font-size:1.45rem; font-weight:500; color:#f3e9ff}
+#players,#lplayers{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+.pl{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:999px; padding:5px 13px; font-size:.82rem; color:var(--mute)}
+.pl.cur{border-color:var(--neon); color:var(--text); box-shadow:0 0 12px rgba(192,132,255,.4)}
+.pl .tk{width:9px; height:9px}
+@media (max-width:520px){ h1{font-size:2rem} .tk{width:7px; height:7px} .tk.can{width:11px; height:11px} .cell i{font-size:.42rem; top:1px; left:2px} #board{padding:5px; gap:2px} }
+@media (prefers-reduced-motion:reduce){ .tk.can,.die.roll{animation:none} *{transition:none!important} }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Poliana</h1><div id="code" hidden></div></header>
+
+  <section id="home" class="card">
+    <input id="name" maxlength="14" placeholder="Tu nombre" autocomplete="off">
+    <button class="main" id="create">Crear sala</button>
+    <small>o entra con el código de un amigo</small>
+    <div class="row"><input id="jcode" maxlength="4" placeholder="Código" autocomplete="off" style="width:110px;text-transform:uppercase"><button id="join">Unirme</button></div>
+    <div id="err"></div>
+  </section>
+
+  <section id="lobby" class="card" hidden>
+    <small>Pásale este link a tus amigos (2 a 4 jugadores)</small>
+    <button id="copy">Copiar link</button>
+    <div id="lplayers"></div>
+    <button class="main" id="start">Empezar partida</button>
+    <small id="wait"></small>
+  </section>
+
+  <section id="game" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div id="board"></div>
+    <div id="msg" aria-live="polite"></div>
+    <div class="row" id="chips"></div>
+    <div class="row" id="pieces"></div>
+    <div class="row"><button class="main" id="roll">Tirar dados</button><button id="again" hidden>Otra partida</button></div>
+    <div id="players"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const COL = [['Verde','#4ade80'],['Amarillo','#fde047'],['Azul','#60a5fa'],['Rojo','#fb7185']];
+  const GA = ['1/1','1/2','2/1','2/2','2/3','3/2','3/3'];
+  const END = 57;
+  const xy = i => { const s = Math.floor(i / 14), k = i % 14; return s === 0 ? [0,k] : s === 1 ? [k,14] : s === 2 ? [14,14-k] : [14-k,0]; };
+  const label = k => k === 0 ? 9 : k <= 5 ? k + 9 : k - 5;
+
+  // ---- tablero ----
+  const board = $('board');
+  for (let i = 0; i < 56; i++) {
+    const [x, y] = xy(i), k = i % 14, s = Math.floor(i / 14), d = document.createElement('div');
+    d.className = 'cell' + (k === 0 || k === 8 ? ' col' : ''); d.id = 'r' + i;
+    d.style.gridColumn = x + 1; d.style.gridRow = y + 1; d.style.setProperty('--c', COL[s][1]);
+    d.innerHTML = '<i>' + label(k) + '</i><div class="toks"></div>'; board.appendChild(d);
+  }
+  const QP = [[2,2],[2,10],[10,10],[10,2]];
+  for (let ci = 0; ci < 4; ci++) {
+    const q = document.createElement('div'); q.className = 'quad'; q.id = 'q' + ci;
+    q.style.gridColumn = QP[ci][0] + ' / span 5'; q.style.gridRow = QP[ci][1] + ' / span 5'; q.style.setProperty('--c', COL[ci][1]);
+    let h = '<div class="celda">';
+    for (let i = 0; i < 4; i++) h += '<div class="slot" id="s' + ci + '_' + i + '"><div class="toks"></div></div>';
+    h += '</div><div class="casa">';
+    for (let n = 1; n <= 7; n++) h += '<div class="cell hc' + (n === 7 ? ' goal' : '') + '" id="h' + ci + '_' + n + '" style="grid-area:' + GA[n-1] + '"><i>' + n + '</i><div class="toks"></div></div>';
+    q.innerHTML = h + '</div>'; board.appendChild(q);
+  }
+  const bowl = document.createElement('div'); bowl.id = 'bowl';
+  bowl.innerHTML = '<div class="die" id="d0">·</div><div class="die" id="d1">·</div>'; board.appendChild(bowl);
+
+  const ringIdx = (ci, st) => (ci * 14 + 6 + st) % 56;
+  const where = (ci, st, i) => st < 0 ? $('s' + ci + '_' + i) : st <= 50 ? $('r' + ringIdx(ci, st)) : $('h' + ci + '_' + (st - 50));
+  const spot = (ci, st) => st < 0 ? 'celda' : st === END ? 'libre' : st <= 50 ? 'casilla ' + label(ringIdx(ci, st) % 14) : 'casa ' + (st - 50);
+  const dot = c => { const t = document.createElement('b'); t.className = 'tk'; t.style.background = t.style.color = c; return t; };
+
+  // ---- conexión ----
+  let ws, S = null, sess = null, selKey = null;
+  try { sess = JSON.parse(sessionStorage.getItem('poliana') || 'null'); } catch (e) {}
+  const send = o => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
+  function connect(first){
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    ws.onopen = () => { if (first) first(); else if (sess) send({t:'join', code:sess.code, id:sess.id, name:sess.name}); };
+    ws.onmessage = e => {
+      const m = JSON.parse(e.data);
+      if (m.t === 'error') { $('err').textContent = m.text; if (sess) { sess = null; try { sessionStorage.removeItem('poliana'); } catch (x) {} S = null; show(); } }
+      else if (m.t === 'state') onState(m);
+    };
+    ws.onclose = () => { if (sess) setTimeout(() => connect(), 1500); };
+  }
+  const open = cb => (ws && ws.readyState === 1) ? cb() : connect(cb);
+  const nm = () => $('name').value.trim() || 'Jugador';
+
+  $('create').onclick = () => { $('err').textContent = ''; open(() => send({t:'create', name:nm()})); };
+  $('join').onclick = () => {
+    const c = $('jcode').value.trim(); if (!c) { $('err').textContent = 'Escribe el código de la sala'; return; }
+    $('err').textContent = ''; open(() => send({t:'join', code:c, name:nm()}));
+  };
+  $('start').onclick = () => send({t:'start'});
+  $('again').onclick = () => send({t:'start'});
+  $('roll').onclick = () => send({t:'roll'});
+  $('copy').onclick = async () => {
+    const link = location.origin + location.pathname + '?sala=' + S.code;
+    try { await navigator.clipboard.writeText(link); $('copy').textContent = 'Link copiado'; } catch (e) { $('copy').textContent = link; }
+  };
+  const q = new URLSearchParams(location.search).get('sala'); if (q) $('jcode').value = q.toUpperCase();
+
+  // ---- estado ----
+  function onState(m){
+    const prev = S; S = m;
+    if (!sess || sess.code !== m.code || sess.id !== m.id) {
+      sess = {code:m.code, id:m.id, name:m.players[m.you].name};
+      try { sessionStorage.setItem('poliana', JSON.stringify(sess)); } catch (e) {}
+    }
+    if (m.cur === m.you && m.phase === 'move') {
+      const av = m.legal.amts.filter(a => a.pieces.length);
+      if (!av.some(a => a.key === selKey)) selKey = (av.length === 1 && m.legal.enter < 0) ? av[0].key : null;
+    } else selKey = null;
+    show(); render();
+    if (m.dice[0] && (!prev || prev.phase === 'roll' || prev.dice.join() !== m.dice.join())) ['d0','d1'].forEach(id => { const d = $(id); d.classList.remove('roll'); void d.offsetWidth; d.classList.add('roll'); });
+  }
+  function show(){
+    const lobby = S && S.phase === 'lobby', game = S && !lobby;
+    $('home').hidden = !!S; $('lobby').hidden = !lobby; $('game').hidden = !game;
+    $('code').hidden = !S; if (S) $('code').textContent = 'Sala ' + S.code;
+    if (!S) $('copy').textContent = 'Copiar link';
+  }
+  function can(i){
+    const s = S; if (s.cur !== s.you || s.phase !== 'move') return false;
+    const st = s.players[s.you].steps[i];
+    if (st < 0) return s.legal.enter >= 0;
+    if (st >= END || !selKey) return false;
+    const a = s.legal.amts.find(x => x.key === selKey); return !!a && a.pieces.includes(i);
+  }
+  function pick(i){ const st = S.players[S.you].steps[i]; send({t:'move', i, key: st < 0 ? 'e' : selKey}); }
+
+  function render(){
+    const s = S, mine = s.cur === s.you;
+    if (s.phase === 'lobby') {
+      $('lplayers').innerHTML = '';
+      s.players.forEach((p, k) => { const d = document.createElement('div'); d.className = 'pl'; d.appendChild(dot(COL[k][1])); d.append(p.name + (k === s.you ? ' (tú)' : '')); $('lplayers').appendChild(d); });
+      const host = s.you === 0;
+      $('start').hidden = !host; $('start').disabled = s.players.length < 2;
+      $('wait').textContent = host ? (s.players.length < 2 ? 'Esperando a que se una al menos un amigo' : 'Cuando estén todos, dale a empezar') : 'Esperando a que el anfitrión empiece';
+      return;
+    }
+    document.querySelectorAll('.toks').forEach(e => e.innerHTML = '');
+    s.players.forEach((p, pi) => p.steps.forEach((st, i) => {
+      const t = dot(COL[p.ci][1]); if (st === END) t.classList.add('done');
+      if (pi === s.you && can(i)) { t.classList.add('can'); t.title = 'Mover esta ficha'; t.onclick = () => pick(i); }
+      where(p.ci, st, i).querySelector('.toks').appendChild(t);
+    }));
+    document.querySelectorAll('.quad').forEach(x => x.classList.remove('act'));
+    if (s.phase !== 'over') $('q' + s.players[s.cur].ci).classList.add('act');
+    $('players').innerHTML = '';
+    s.players.forEach((p, pi) => {
+      const d = document.createElement('div'); d.className = 'pl' + (pi === s.cur && s.phase !== 'over' ? ' cur' : '');
+      d.appendChild(dot(COL[p.ci][1]));
+      d.append(p.name + (pi === s.you ? ' (tú)' : '') + ' · ' + p.steps.filter(x => x === END).length + '/4 libres' + (p.on ? '' : ' · desconectado'));
+      $('players').appendChild(d);
+    });
+    $('d0').textContent = s.dice[0] || '·'; $('d1').textContent = s.dice[1] || '·';
+    $('d0').classList.toggle('used', s.used[0]); $('d1').classList.toggle('used', s.used[1]);
+    $('msg').textContent = (mine && s.phase === 'roll') ? 'Tu turno, tira los dados' : (mine && s.phase === 'move') ? 'Elige cómo usar los dados' : s.msg;
+    $('roll').hidden = s.phase === 'over'; $('roll').disabled = !(mine && s.phase === 'roll');
+    $('again').hidden = !(s.phase === 'over' && s.you === 0);
+
+    const chips = $('chips'), pcs = $('pieces'); chips.innerHTML = ''; pcs.innerHTML = '';
+    if (mine && s.phase === 'move') {
+      s.legal.amts.forEach(a => {
+        const b = document.createElement('button'); b.textContent = a.sum ? 'Suma ' + a.val : 'Dado ' + a.val;
+        b.disabled = !a.pieces.length; if (a.key === selKey) b.classList.add('on');
+        b.onclick = () => { selKey = a.key; render(); }; chips.appendChild(b);
+      });
+      s.players[s.you].steps.forEach((st, i) => {
+        const b = document.createElement('button'); b.textContent = 'Ficha ' + (i + 1) + ' · ' + spot(s.players[s.you].ci, st);
+        b.disabled = !can(i); b.onclick = () => pick(i); pcs.appendChild(b);
+      });
+    }
+  }
+
+  show();
+  if (sess) connect();
+})();
+</script>
+</body>
+</html>
