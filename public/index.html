@@ -68,7 +68,8 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
 .arm{display:grid; gap:2px; min-width:0; min-height:0}
 .arm.h{grid-template-columns:repeat(4,1fr); grid-template-rows:.5fr 2fr .5fr}
 .arm.v{grid-template-columns:.5fr 2fr .5fr; grid-template-rows:repeat(4,1fr)}
-.uc{position:relative; display:grid; place-items:center; background:linear-gradient(#8a5bc4,var(--purple)); border:1px solid var(--purple-hi); border-radius:4px; color:#fff; font-weight:600; font-size:calc(var(--cell)*.32); line-height:1}
+.uc{position:relative; display:grid; place-items:center; background:linear-gradient(#8a5bc4,var(--purple)); border:1px solid var(--purple-hi); border-radius:4px; color:#fff; font-weight:600; font-size:calc(var(--cell)*.38); line-height:1}
+.uc i{position:absolute; inset:0; display:grid; place-items:center; font-style:normal; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .uc .tk{scale:.58}
 .uc .tk.can{scale:.85}
 .uc .tk.can.pick{scale:1}
@@ -271,8 +272,7 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
       const [c, r] = AP(s, d, a), u = mk('uc', txt === '' ? '' : String(txt));
       u.style.gridColumn = c; u.style.gridRow = r;
       if (n) {
-        // Mapeo visual exacto: la celda 1 de la casa conecta con la casilla 14 normal, y la celda 7 sale a la casilla 4 normal
-        u.id = 'u' + s + '_' + n; u.insertAdjacentHTML('beforeend', '<i>' + n + '</i><div class="toks"></div>');
+        u.id = 'u' + s + '_' + n; u.innerHTML = '<i>' + n + '</i><div class="toks"></div>';
       }
       arm.appendChild(u);
     };
