@@ -74,7 +74,6 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
 .uc .tk.can.pick{scale:1}
 .base{display:grid; grid-template-columns:repeat(2,auto); grid-auto-rows:auto; place-content:center; gap:2px; background:radial-gradient(circle at 50% 35%,#b98650,#7d4d24); border-radius:12px; box-shadow:inset 0 3px 8px rgba(0,0,0,.55)}
 .slot{position:relative; width:calc(var(--cell)*.9); height:calc(var(--cell)*.9); border-radius:50%; background:rgba(0,0,0,.28); box-shadow:inset 0 2px 4px rgba(0,0,0,.6)}
-/* casilla 0: espacio sin número, solo para sembrar */
 .seed{position:relative; place-self:center; width:calc(var(--cell)*.96); height:calc(var(--cell)*.96); border-radius:8px;
   background:linear-gradient(color-mix(in srgb,var(--c) 75%,#fff),var(--c)); border:max(2px,calc(var(--cell)*.09)) solid #fff;
   box-shadow:0 2px 5px rgba(0,0,0,.5),inset 0 0 0 calc(var(--cell)*.09) rgba(0,0,0,.16)}
@@ -100,14 +99,12 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
   100%{transform:translateY(0) rotateX(720deg) rotateY(360deg) rotateZ(0) scale(1)}
 }
 
-/* ---------- bandejas de fichas liberadas (fuera del tablero) ---------- */
 .trays{display:flex; justify-content:space-between; gap:8px}
 .tray{--cell:26px; display:flex; align-items:center; gap:6px; padding:4px 10px; min-height:38px; border-radius:999px; background:color-mix(in srgb,var(--c) 26%,#2f1c0e); border:2px solid color-mix(in srgb,var(--c) 70%,#fff); transition:opacity .3s}
 .tray.empty{opacity:.3}
 .tn{font-size:.74rem; font-weight:600; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#f3e2bd}
 .tslot{width:calc(var(--cell)*1.05); height:calc(var(--cell)*1.05); border-radius:50%; background:rgba(0,0,0,.35); box-shadow:inset 0 2px 3px rgba(0,0,0,.6); display:grid; place-items:center}
 
-/* ---------- fichas ---------- */
 .tk{
   position:relative; flex:none; width:calc(var(--cell)*.94); height:calc(var(--cell)*.94); border-radius:50%; display:grid; place-items:center; pointer-events:none;
   font-weight:700; font-size:calc(var(--cell)*.52); line-height:1; color:var(--fg,#fff); text-shadow:0 1px 1px rgba(0,0,0,.45);
@@ -128,7 +125,6 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
   50%{box-shadow:0 0 0 3px var(--halo),0 0 0 8px var(--tc),0 0 24px 12px color-mix(in srgb,var(--halo) 50%,transparent)}
 }
 
-/* ---------- mensajes y controles ---------- */
 #clock{align-self:center; background:rgba(0,0,0,.35); border:2px solid rgba(255,235,190,.35); border-radius:999px; padding:2px 16px; font-weight:600; font-size:1.05rem; letter-spacing:.06em; font-variant-numeric:tabular-nums}
 #clock.low{background:#7a1219; border-color:#fff; color:#fff; animation:blink 1s steps(2,jump-none) infinite}
 @keyframes blink{50%{opacity:.55}}
@@ -144,7 +140,6 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
 .pl .tk{width:16px; height:16px; border-width:2px; box-shadow:none; font-size:0; flex:none}
 .pl.spec{border-style:dashed}
 
-/* ---------- espectador ---------- */
 .spec{gap:10px; padding:16px 14px}
 .spec button{padding:6px 12px; min-height:42px}
 #emo button{font-size:1.5rem; padding:4px 12px}
@@ -250,7 +245,6 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
   const label = k => k === 0 ? 9 : k <= 5 ? k + 9 : k - 5;
   const mk = (cls, html) => { const d = document.createElement('div'); d.className = cls; if (html) d.innerHTML = html; return d; };
 
-  // ---------- tablero ----------
   const board = $('board');
   for (let i = 0; i < 56; i++) {
     const [x, y] = xy(i), k = i % 14, s = Math.floor(i / 14);
@@ -276,7 +270,10 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
     const put = (d, a, txt, n) => {
       const [c, r] = AP(s, d, a), u = mk('uc', txt === '' ? '' : String(txt));
       u.style.gridColumn = c; u.style.gridRow = r;
-      if (n) { u.id = 'u' + s + '_' + n; u.insertAdjacentHTML('beforeend', '<div class="toks"></div>'); }
+      if (n) {
+        // Mapeo visual exacto: la celda 1 de la casa conecta con la casilla 14 normal, y la celda 7 sale a la casilla 4 normal
+        u.id = 'u' + s + '_' + n; u.insertAdjacentHTML('beforeend', '<i>' + n + '</i><div class="toks"></div>');
+      }
       arm.appendChild(u);
     };
     for (let d = 1; d <= 4; d++) put(d, 0, d, d);
