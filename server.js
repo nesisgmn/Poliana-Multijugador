@@ -52,9 +52,9 @@ function houseOcc(r) {
   return o;
 }
 
-// Retorna el lado (0..3) cuya casa se cruza exactamente en el paso s del carril normal (la entrada es al pasar la casilla 14, que equivale a x % 14 == 5)
+// Retorna el lado (0..3) cuya casa se cruza exactamente en el paso s del carril normal (la entrada es al pasar la casilla 14)
 function branchSide(ci, s, fromInH) {
-  if (fromInH) return -1; // Si ya va dentro de la casa, no vuelve a ramificar
+  if (fromInH) return -1;
   if (s >= 1 && s <= 50) {
     const x = ringIdx(ci, s);
     if (x % 14 === 5) return Math.floor(x / 14);
@@ -86,7 +86,7 @@ function ownStackCount(p, to, inH) {
   return c;
 }
 
-// Rutas posibles de una ficha con un valor (Corregido: entrada en casilla 14 / salida exacta en casilla 4 normal, prohibido entrar a casa propia al sembrar)
+// Rutas posibles de una ficha con un valor (Entrada en casilla 14 / Salida exacta en casilla 4 normal)
 function routes(r, p, i, val) {
   const st = p.steps[i], to = st + val, out = {};
   if (st < 0 || st >= END || to > END) return out;
@@ -101,7 +101,7 @@ function routes(r, p, i, val) {
     if (rem <= 7) {
       out.h = land(true); // Se mantiene dentro de la casa
     } else {
-      // Sale de la casa: al terminar el 7 de la casa, cae exactamente en la casilla 4 del carril normal (equivalente a st + val total)
+      // Sale de la casa: al terminar el 7 de la casa, cae exactamente en la casilla 4 del carril normal
       const normalTarget = st + val;
       if (ownStackCount(p, normalTarget, false) >= 2) return out;
       out.h = { to: normalTarget, inH: false, kills: victims(r, p, normalTarget).length };
@@ -118,7 +118,7 @@ function routes(r, p, i, val) {
   for (let j = 0; j < val; j++) {
     const side = branchSide(p.ci, st + j, false);
     if (side < 0) continue;
-    // REGLA: No se puede entrar a la casa propia (side === p.ci) al sembrar o pasar por ahí si recién sale
+    // REGLA: Prohibido entrar a la casa propia al sembrar o salir
     if (side === p.ci && st <= 3) continue; 
 
     const rem = val - j;
