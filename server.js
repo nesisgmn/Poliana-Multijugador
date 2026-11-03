@@ -14,7 +14,7 @@ const AL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
+  '.css': 'text/css; charset/utf-8',
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
@@ -37,29 +37,33 @@ const rooms = new Map();
 
 const code4 = () => Array.from({ length: 4 }, () => AL[Math.floor(Math.random() * AL.length)]).join('');
 const d6 = () => 1 + Math.floor(Math.random() * 6);
-const ringIdx = (ci, st) => (ci * 14 + 5 + st) % 56;
+const ringIdx = (ci, st) => (ci * 14 + 5 + st) % 56;       // válido para st 1..51
 const onRing = st => st >= 1 && st <= RING;
 const cur = r => r.seats[r.cur];
 const send = (ws, o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
 const note = (r, text) => { r.notice = { n: r.notice.n + 1, text }; };
 
+// Calcula el paso "st" (1..51) del jugador "ci" correspondiente a la casilla 4 normal del lado "side"
+function exitHouseStep(ci, side) {
+  const d = (side - ci + 4) % 4;
+  return d * 14 + 4; // En su propio lado (d=0) es st=4; en los otros lados es 18, 32 o 46 (todas son la casilla 4 de ese lado)
+}
+
 // ---- reglas ----
+// Casillas de casa ocupadas: clave = side * 10 + pos (1..7)
 function houseOcc(r) {
   const o = new Set();
-  r.seats.forEach(q => q.steps.forEach((st, j) => {
-    if (q.inH[j]) { const x = ringIdx(q.ci, st); o.add(Math.floor(x / 14) * 10 + (x % 14) - 5); }
+  r.seats.forEach(q => q.inH.forEach(h => {
+    if (h) o.add(h.side * 10 + h.pos);
   }));
   return o;
 }
 
-// Detecta si al pasar por el carril normal se pisa la casilla 14 de un sector (donde inicia la casa 1)
-function branchSide(ci, s, fromInH) {
-  if (fromInH) return -1;
-  if (s >= 1 && s <= 50) {
-    const x = ringIdx(ci, s);
-    // x % 14 === 5 es la casilla 14 del bloque de 14 de ese lado
-    if (x % 14 === 5) return Math.floor(x / 14);
-  }
+// Verifica si el paso "s" del carril normal es exactamente la casilla 14 de algún lado (donde empieza la casa 1)
+function branchSideAt14(ci, s) {
+  if (s < 1 || s > 50) return -1;
+  const x = ringIdx(ci, s);
+  if (x % 14 === 5) return Math.floor(x / 14); // k === 5 es la casilla 14 de ese lado
   return -1;
 }
 
@@ -76,67 +80,81 @@ function victims(r, p, t) {
 }
 function hitAll(r, p, t) {
   const v = victims(r, p, t);
-  v.forEach(([q, j]) => { q.steps[j] = -1; q.inH[j] = false; });
+  v.forEach(([q, j]) => { q.steps[j] = -1; q.inH[j] = null; });
   return v.length;
 }
 
-function ownStackCount(p, to, inH) {
+function ownStackCount(p, to) {
   if (to <= 0 || to >= END) return 0;
   let c = 0;
-  p.steps.forEach((s, j) => { if (s === to && p.inH[j] === inH) c++; });
+  p.steps.forEach((s, j) => { if (s === to && !p.inH[j]) c++; });
   return c;
 }
 
-// Rutas con la conexión exacta: entra en 14 normal -> casa 1..7 -> sale directo sumando en la casilla 4 normal
+// Rutas posibles de una ficha con un valor:
+// - Entrar a la casa: desde la casilla 14 normal se cuenta 1, 2, 3, 4, 5, 6, 7 de la casa.
+// - Salir de la casa: del 7 de la casa el siguiente paso es la casilla 4 normal de ese mismo lado (y sigue 5, 6...).
 function routes(r, p, i, val) {
-  const st = p.steps[i], to = st + val, out = {};
-  if (st < 0 || st >= END || to > END) return out;
+  const st = p.steps[i], h = p.inH[i], out = {};
+  if (st < 0 || st >= END) return out;
   const O = houseOcc(r);
   const free = (side, a, b) => { for (let c = a; c <= b; c++) if (O.has(side * 10 + c)) return false; return true; };
-  const land = inH => ({ to, inH, kills: inH ? 0 : victims(r, p, to).length });
 
-  if (p.inH[i]) {
-    const x = ringIdx(p.ci, st), side = Math.floor(x / 14), n = (x % 14) - 5;
-    if (!free(side, n + 1, Math.min(n + val, 7))) return out;
-    const rem = n + val;
-    if (rem <= 7) {
-      out.h = land(true); // Sigue dentro de la casa (1 a 7)
+  // CASO 1: La ficha YA está dentro de una casa (pos 1..7)
+  if (h) {
+    const { side, pos } = h;
+    if (!free(side, pos + 1, Math.min(pos + val, 7))) return out; // No puede saltar ni hacer torre en la casa
+    const newPos = pos + val;
+    if (newPos <= 7) {
+      out.h = { to: st, inH: { side, pos: newPos }, kills: 0 };
     } else {
-      // Al salir de la casa (pasa de la casilla 7), los pasos sobrantes caen exactamente a partir de la casilla 4 normal del carril
-      // Distancia recorrida normal equivalente: st (posición actual) + val total
-      const normalTarget = st + val;
-      if (ownStackCount(p, normalTarget, false) >= 2) return out;
-      out.h = { to: normalTarget, inH: false, kills: victims(r, p, normalTarget).length };
+      // Sale del 7 de la casa directo a la casilla 4 normal de ese lado:
+      // Con el paso que sale del 7 pisa la casilla 4 normal, y si le sobran pasos sigue avanzando (5, 6...)
+      const over = newPos - 7; // over=1 -> cae en casilla 4; over=2 -> cae en casilla 5...
+      const normalTarget = exitHouseStep(p.ci, side) + (over - 1);
+      if (normalTarget <= END && ownStackCount(p, normalTarget) < 2) {
+        out.h = { to: normalTarget, inH: null, kills: victims(r, p, normalTarget).length };
+      }
     }
     return out;
   }
 
-  if (ownStackCount(p, to, false) < 2) {
-    out.n = land(false);
+  // CASO 2: La ficha va por el carril normal
+  const to = st + val;
+  if (to <= END && ownStackCount(p, to) < 2) {
+    out.n = { to, inH: null, kills: victims(r, p, to).length };
   }
 
+  // ¿Cruza o está parada en la casilla 14 de algún otro lado para meterse a la casa?
   for (let j = 0; j < val; j++) {
-    const side = branchSide(p.ci, st + j, false);
+    const side = branchSideAt14(p.ci, st + j);
     if (side < 0) continue;
-    if (side === p.ci && st <= 3) continue; // Prohibido meterse a la casa propia al sembrar
+    if (side === p.ci) continue; // Solo da opción en la casa de otros
 
-    const rem = val - j;
-    const stayInH = rem <= 7;
-    if (free(side, 1, Math.min(rem, 7)) && (stayInH || ownStackCount(p, to, false) < 2)) {
-      out.h = land(stayInH);
+    const rem = val - j; // Pasos que da entrando a la casa desde la casilla 14 (rem=1 -> cae en el 1 de la casa)
+    if (!free(side, 1, Math.min(rem, 7))) break;
+    if (rem <= 7) {
+      out.h = { to: st + j, inH: { side, pos: rem }, kills: 0 };
+    } else {
+      const over = rem - 7;
+      const normalTarget = exitHouseStep(p.ci, side) + (over - 1);
+      if (normalTarget <= END && ownStackCount(p, normalTarget) < 2) {
+        out.h = { to: normalTarget, inH: null, kills: victims(r, p, normalTarget).length };
+      }
     }
     break;
   }
   return out;
 }
 
+// Números para sembrar: (3,3), (6,3), (4,2), (6,6), (5,1)
 function enterOpt(r) {
   if (r.bonus || r.used[0] || r.used[1]) return null;
   const p = cur(r);
   const base = p.steps.map((s, i) => s === -1 ? i : -1).filter(i => i >= 0);
   if (!base.length) return null;
   const [a, b] = r.dice;
-  const atZero = p.steps.filter(s => s === 0).length;
+  const atZero = p.steps.filter((s, idx) => s === 0 && !p.inH[idx]).length;
   const atThree = p.steps.filter((s, idx) => s === 3 && !p.inH[idx]).length;
 
   if (a === 6 && b === 6) {
@@ -270,7 +288,7 @@ wss.on('connection', ws => {
         if (room.seats.length >= 4) return fail('La sala está llena');
         seat = {
           id: crypto.randomBytes(8).toString('hex'), name: String(m.name || 'Jugador').slice(0, 14), ci: room.seats.length,
-          steps: [-1, -1, -1, -1], inH: [false, false, false, false], place: 0, spec: false, skip: false, fx: 0, ws, on: true
+          steps: [-1, -1, -1, -1], inH: [null, null, null, null], place: 0, spec: false, skip: false, fx: 0, ws, on: true
         };
         room.seats.push(seat);
       }
@@ -285,7 +303,7 @@ wss.on('connection', ws => {
       r.seats = r.seats.filter(s => s.on);
       const n = r.seats.length; if (n < 2) return fail('Se necesitan al menos 2 jugadores');
       r.seats.forEach((s, k) => {
-        s.ci = ORDER[n][k]; s.steps = [-1, -1, -1, -1]; s.inH = [false, false, false, false];
+        s.ci = ORDER[n][k]; s.steps = [-1, -1, -1, -1]; s.inH = [null, null, null, null];
         s.place = 0; s.spec = false; s.skip = false;
       });
       r.cur = 0; startTurn(r); r.msg = 'Empieza ' + cur(r).name;
@@ -315,7 +333,7 @@ wss.on('connection', ws => {
       r.dice = [d6(), d6()]; r.used = [false, false]; r.bonus = 0;
       r.rollSnap = {
         steps: [...p.steps],
-        inH: [...p.inH],
+        inH: p.inH.map(h => h ? { ...h } : null),
         killers: [],
         movedPieces: new Set(),
         didKill: false
@@ -337,11 +355,13 @@ wss.on('connection', ws => {
     if (m.t === 'move' && r.phase === 'move' && cur(r) === ws.seat) {
       const p = ws.seat, i = m.i | 0; if (i < 0 || i > 3) return;
 
+      // Prioridad de siembra: si puede sembrar y no hay jugada que mate con este movimiento
       const mandatoryEnter = enterOpt(r);
-      if (mandatoryEnter && m.key !== 'e') {
+      const canKillNow = getKillers(r, p).length > 0;
+      if (mandatoryEnter && !canKillNow && m.key !== 'e') {
         p.steps = [...r.rollSnap.steps];
-        p.inH = [...r.rollSnap.inH];
-        note(r, `¡Error! ${p.name} tenía fichas en base para sembrar y era obligatorio. Se revierte el movimiento.`);
+        p.inH = r.rollSnap.inH.map(h => h ? { ...h } : null);
+        note(r, `¡Error! ${p.name} tenía fichas en base para sembrar y era su prioridad. Se revierte el movimiento.`);
         broadcast(r);
         return;
       }
@@ -350,7 +370,7 @@ wss.on('connection', ws => {
       if (m.key === 'e') {
         const o = enterOpt(r); if (!o || p.steps[i] !== -1) return;
         const idxs = [i].concat(p.steps.map((s, j) => (s === -1 && j !== i) ? j : -1).filter(j => j >= 0)).slice(0, o.n);
-        idxs.forEach(j => { p.steps[j] = o.target; p.inH[j] = false; if (r.rollSnap) r.rollSnap.movedPieces.add(j); });
+        idxs.forEach(j => { p.steps[j] = o.target; p.inH[j] = null; if (r.rollSnap) r.rollSnap.movedPieces.add(j); });
         r.used = [true, true];
         n = o.target ? hitAll(r, p, o.target) : 0;
         txt = o.n === 2 ? 'siembra 2 fichas a la vez' : o.target ? 'saca una ficha a la casilla 3' : 'siembra una ficha en casilla 0';
@@ -365,7 +385,7 @@ wss.on('connection', ws => {
         a.use.forEach(u => { r.used[u] = true; });
         if (a.bonus) r.bonus = 0;
         n = res.inH ? 0 : hitAll(r, p, res.to);
-        txt = (a.bonus ? 'avanza los +' + BONUS + ' del bono' : res.to === END ? 'libera una ficha' : 'mueve ' + a.val) + (k === 'h' && res.inH ? ' por la casa' : '');
+        txt = (a.bonus ? 'avanza los +' + BONUS + ' del bono' : res.to === END ? 'libera una ficha' : 'mueve ' + a.val) + (k === 'h' ? (res.inH ? ` por la casa (casilla ${res.inH.pos})` : ' saliendo de la casa a partir del 4') : '');
       }
 
       if (n > 0) {
@@ -398,13 +418,13 @@ wss.on('connection', ws => {
           const kIdx = r.rollSnap.killers[0];
           if (r.rollSnap.movedPieces.size >= 2) {
             p.steps = [...r.rollSnap.steps];
-            p.inH = [...r.rollSnap.inH];
-            if (p.steps[kIdx] >= 0) { p.steps[kIdx] = -1; p.inH[kIdx] = false; }
+            p.inH = r.rollSnap.inH.map(h => h ? { ...h } : null);
+            if (p.steps[kIdx] >= 0) { p.steps[kIdx] = -1; p.inH[kIdx] = null; }
             note(r, `¡Soplado! ${p.name} no mató y movió dos fichas: se regresan sus fichas, la ficha ${kIdx + 1} va a la base y pierde el turno.`);
             r.phase = 'wait'; pause(r, 2200);
             return broadcast(r);
           } else {
-            if (p.steps[kIdx] >= 0) { p.steps[kIdx] = -1; p.inH[kIdx] = false; }
+            if (p.steps[kIdx] >= 0) { p.steps[kIdx] = -1; p.inH[kIdx] = null; }
             note(r, `¡Soplado! ${p.name} no quiso matar: su ficha ${kIdx + 1} regresa a la base.`);
           }
         }
