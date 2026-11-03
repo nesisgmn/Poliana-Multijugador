@@ -329,13 +329,13 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
     });
   }
 
-  // 3. Casas moradas (1 al 7) en puente continuo sin huecos (en las coordenadas del lado 0: col, fila):
-  // - Casa 1 en [2,7], pegada a la casilla ★ de siembra [1,7] y junto a la casilla 14 [1,6]
-  // - Baja por la columna 3: Casa 2 en [3,7], Casa 3 en [3,8], Casa 4 en [3,9], Casa 5 en [3,10], Casa 6 en [3,11]
-  // - Dobla a Casa 7 en [2,11], justo pegada a la casilla 4 normal [1,11]
-  // - Adentro del puente (columna 2, filas 8..10) queda encajada la base con las 4 fichas
-  const HPOS = [[2,7],[3,7],[3,8],[3,9],[3,10],[3,11],[2,11]];
-  const BPOS = [[2,8],[2,10]];
+  // 3. Casas moradas (1 al 7) (en las coordenadas del lado 0: col, fila):
+  // - Casa 1 en [2,6], justo pegada a la casilla 14 normal [1,6]
+  // - Baja por la columna 3: Casa 2 en [3,6], 3 en [3,7], 4 en [3,8], 5 en [3,9], 6 en [3,10]
+  // - Casa 7 en [2,11], justo pegada a la casilla 4 normal [1,11] (toca en diagonal con la 6)
+  // - Adentro del puente (columna 2, filas 7..10) queda encajada la base con las 4 fichas
+  const HPOS = [[2,6],[3,6],[3,7],[3,8],[3,9],[3,10],[2,11]];
+  const BPOS = [[2,7],[2,10]];
   for (let s = 0; s < 4; s++) {
     HPOS.forEach(([c, r], idx) => {
       const n = idx + 1;
