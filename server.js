@@ -58,7 +58,6 @@ function branchSide(ci, s) {
   return -1;
 }
 
-// Víctimas al caer en el paso t del carril normal (Regla 8: en st === 51 / casilla 9 propia tras dar la vuelta ya no te matan)
 function victims(r, p, t) {
   if (!onRing(t)) return [];
   const idx = ringIdx(p.ci, t), v = [];
@@ -76,7 +75,6 @@ function hitAll(r, p, t) {
   return v.length;
 }
 
-// Regla 6: Avanzando con dados solo puedes hacer torre de máximo 2 fichas propias
 function ownStackCount(p, to, inH) {
   if (to <= 0 || to >= END) return 0;
   let c = 0;
@@ -84,7 +82,7 @@ function ownStackCount(p, to, inH) {
   return c;
 }
 
-// Rutas posibles de una ficha con un valor: n = carril normal, h = casa
+// Rutas posibles de una ficha con un valor (Corregido: salida exacta desde la casa al carril normal)
 function routes(r, p, i, val) {
   const st = p.steps[i], to = st + val, out = {};
   if (st < 0 || st >= END || to > END) return out;
@@ -92,18 +90,30 @@ function routes(r, p, i, val) {
   const free = (side, a, b) => { for (let c = a; c <= b; c++) if (O.has(side * 10 + c)) return false; return true; };
   const land = inH => ({ to, inH, kills: inH ? 0 : victims(r, p, to).length });
 
-  if (p.inH[i]) {                                   // ya va dentro de una casa (1 al 7)
+  if (p.inH[i]) {
     const x = ringIdx(p.ci, st), side = Math.floor(x / 14), n = (x % 14) - 5;
     if (!free(side, n + 1, Math.min(n + val, 7))) return out;
-    const stayInH = n + val <= 7;
-    if (!stayInH && ownStackCount(p, to, false) >= 2) return out;
-    out.h = land(stayInH);
+    const rem = n + val;
+    if (rem <= 7) {
+      out.h = land(true); // Se queda dentro de la casa
+    } else {
+      // Sale de la casa (llega al 7 y los pasos extra caen en el carril normal exterior)
+      const extra = rem - 7;
+      // El paso 7 de la casa corresponde a la entrada de la casa (casilla 14 del carril del lado correspondiente)
+      // Calculamos la posición equivalente en el anillo exterior
+      const entryRingPos = side * 14; // posición base del lado
+      // Desde ahí avanza los pasos extra en el carril normal
+      const normalTarget = st + (7 - n) + extra; // recálculo exacto de la distancia total recorrida en pasos
+      if (ownStackCount(p, normalTarget, false) >= 2) return out;
+      out.h = { to: normalTarget, inH: false, kills: victims(r, p, normalTarget).length };
+    }
     return out;
   }
+
   if (ownStackCount(p, to, false) < 2) {
     out.n = land(false);
   }
-  for (let j = 0; j < val; j++) {                   // ¿pasa por la entrada de alguna casa?
+  for (let j = 0; j < val; j++) {
     const side = branchSide(p.ci, st + j);
     if (side < 0) continue;
     const rem = val - j;
@@ -116,25 +126,24 @@ function routes(r, p, i, val) {
   return out;
 }
 
-// Números para sembrar: (3,3), (6,3), (4,2), (6,6), (5,1)
+// Números para sembrar
 function enterOpt(r) {
   if (r.bonus || r.used[0] || r.used[1]) return null;
   const p = cur(r);
   const base = p.steps.map((s, i) => s === -1 ? i : -1).filter(i => i >= 0);
   if (!base.length) return null;
   const [a, b] = r.dice;
-  // Regla 6: al sembrar puedes hacer torre de hasta 3 fichas en el mismo lugar
   const atZero = p.steps.filter(s => s === 0).length;
   const atThree = p.steps.filter((s, idx) => s === 3 && !p.inH[idx]).length;
 
   if (a === 6 && b === 6) {
     const canSeed = Math.min(2, base.length, 3 - atZero);
-    return canSeed > 0 ? { i: base[0], n: canSeed, target: 0 } : null;     // doble 6 siembra doble en casilla 0
+    return canSeed > 0 ? { i: base[0], n: canSeed, target: 0 } : null;
   }
-  if (a + b === 6) {                                                        // (3,3), (4,2), (5,1)
+  if (a + b === 6) {
     return atZero < 3 ? { i: base[0], n: 1, target: 0 } : null;
   }
-  if ((a === 6 && b === 3) || (a === 3 && b === 6)) {                       // (6,3)
+  if ((a === 6 && b === 3) || (a === 3 && b === 6)) {
     return atThree < 3 ? { i: base[0], n: 1, target: 3 } : null;
   }
   return null;
@@ -151,18 +160,26 @@ function amounts(r) {
 
 function pieceOpts(r, p, a) {
   const l = [];
-  p.steps.forEach((s, i) => { const rt = routes(r, p, i, a.val); if (Object.keys(rt).length) l.push({ i, rt }); });
+  p.steps.forEach((s, i) => {
+    const raw = routes(r, p, i, a.val);
+    const ks = Object.keys(raw);
+    if (ks.length) {
+      const rt = {};
+      ks.forEach(k => { rt[k] = raw[k].kills; });
+      l.push({ i, rt });
+    }
+  });
   return l;
 }
 
-// Detecta qué fichas tienen posibilidad de matar en este momento
 function getKillers(r, p) {
   const killers = new Set();
   const e = enterOpt(r);
   if (e && e.target && victims(r, p, e.target).length > 0) killers.add(e.i);
   amounts(r).forEach(a => {
-    pieceOpts(r, p, a).forEach(po => {
-      if (Object.values(po.rt).some(res => res.kills > 0)) killers.add(po.i);
+    p.steps.forEach((s, i) => {
+      const raw = routes(r, p, i, a.val);
+      if (Object.values(raw).some(res => res.kills > 0)) killers.add(i);
     });
   });
   return [...killers];
@@ -191,7 +208,7 @@ function advance(r, prefix) {
     r.cur = (r.cur + 1) % r.seats.length;
     const s = cur(r);
     if (!s.on || s.spec) continue;
-    if (s.skip) {                                      // Regla 9: pierde turno por tirar cuando no le tocaba
+    if (s.skip) {
       s.skip = false;
       extra = (extra ? extra + ' · ' : '') + `${s.name} pierde su turno por castigo`;
       continue;
@@ -281,7 +298,6 @@ wss.on('connection', ws => {
       return;
     }
 
-    // Regla 9: Si alguien tira fuera de su turno, pierde su próximo turno
     if (m.t === 'roll' && r.phase !== 'lobby' && r.phase !== 'over') {
       if (cur(r) !== ws.seat) {
         if (!ws.seat.spec && !ws.seat.skip) {
@@ -305,7 +321,7 @@ wss.on('connection', ws => {
       r.msg = `${p.name} sacó ${r.dice[0]} y ${r.dice[1]}` + (r.dice[0] === r.dice[1] ? ' (¡Pares!)' : '');
       if (anyLegal(r)) r.phase = 'move';
       else {
-        if (r.dice[0] === r.dice[1]) {                 // Regla 7: Pares vuelve a tirar
+        if (r.dice[0] === r.dice[1]) {
           r.phase = 'roll';
           r.msg += ' · sin movimientos, pero sacó pares y vuelve a tirar';
         } else {
@@ -317,6 +333,17 @@ wss.on('connection', ws => {
 
     if (m.t === 'move' && r.phase === 'move' && cur(r) === ws.seat) {
       const p = ws.seat, i = m.i | 0; if (i < 0 || i > 3) return;
+
+      // REGLA 1: Prioridad absoluta de siembra si hay opción obligatoria de sembrar
+      const mandatoryEnter = enterOpt(r);
+      if (mandatoryEnter && m.key !== 'e') {
+        p.steps = [...r.rollSnap.steps];
+        p.inH = [...r.rollSnap.inH];
+        note(r, `¡Error! ${p.name} tenía fichas en base para sembrar y era obligatorio. Se revierte el movimiento.`);
+        broadcast(r);
+        return;
+      }
+
       let txt, n = 0;
       if (m.key === 'e') {
         const o = enterOpt(r); if (!o || p.steps[i] !== -1) return;
@@ -339,14 +366,13 @@ wss.on('connection', ws => {
         txt = (a.bonus ? 'avanza los +' + BONUS + ' del bono' : res.to === END ? 'libera una ficha' : 'mueve ' + a.val) + (k === 'h' && res.inH ? ' por la casa' : '');
       }
 
-      // Regla 2 y 3: Si matas te dan +10 obligatorios primero; si no puedes avanzar los 10, tampoco puedes avanzar lo que te sobró del otro dado
       if (n > 0) {
         if (r.rollSnap) r.rollSnap.didKill = true;
         r.bonus = BONUS;
         const canUseBonus = amounts(r).some(a => pieceOpts(r, p, a).length > 0);
         if (!canUseBonus) {
           r.bonus = 0;
-          r.used = [true, true]; // bloquea también el dado restante (Regla 3)
+          r.used = [true, true];
           note(r, `${p.name} mató pero no tiene espacio para avanzar los +10 puntos; pierde el avance restante.`);
         }
       }
@@ -365,9 +391,7 @@ wss.on('connection', ws => {
         return broadcast(r);
       }
 
-      // Cuando ya terminó de usar sus movimientos de la tirada:
       if (!anyLegal(r)) {
-        // Reglas 10 y 11: Si podía matar y no mató, se regresa a su base la ficha que no mató (y si movió 2 fichas, se revierten ambas y pierde turno)
         if (r.rollSnap && r.rollSnap.killers.length > 0 && !r.rollSnap.didKill) {
           const kIdx = r.rollSnap.killers[0];
           if (r.rollSnap.movedPieces.size >= 2) {
@@ -383,7 +407,6 @@ wss.on('connection', ws => {
           }
         }
 
-        // Regla 7: Si sacó pares, vuelve a tirar hasta que dejen de tocar pares
         if (r.dice[0] === r.dice[1]) {
           r.phase = 'roll';
           r.dice = [0, 0]; r.used = [false, false]; r.bonus = 0;
