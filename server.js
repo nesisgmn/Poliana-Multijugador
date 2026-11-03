@@ -37,7 +37,7 @@ const rooms = new Map();
 
 const code4 = () => Array.from({ length: 4 }, () => AL[Math.floor(Math.random() * AL.length)]).join('');
 const d6 = () => 1 + Math.floor(Math.random() * 6);
-const ringIdx = (ci, st) => (ci * 14 + 5 + st) % 56;       // válido para st 1..51
+const ringIdx = (ci, st) => (ci * 14 + 5 + st) % 56;
 const onRing = st => st >= 1 && st <= RING;
 const cur = r => r.seats[r.cur];
 const send = (ws, o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
@@ -52,11 +52,12 @@ function houseOcc(r) {
   return o;
 }
 
-// Retorna el lado (0..3) cuya casa se cruza exactamente en el paso s del carril normal (la entrada es al pasar la casilla 14)
+// Detecta si al pasar por el carril normal se pisa la casilla 14 de un sector (donde inicia la casa 1)
 function branchSide(ci, s, fromInH) {
   if (fromInH) return -1;
   if (s >= 1 && s <= 50) {
     const x = ringIdx(ci, s);
+    // x % 14 === 5 es la casilla 14 del bloque de 14 de ese lado
     if (x % 14 === 5) return Math.floor(x / 14);
   }
   return -1;
@@ -86,7 +87,7 @@ function ownStackCount(p, to, inH) {
   return c;
 }
 
-// Rutas posibles de una ficha con un valor (Entrada en casilla 14 / Salida exacta en casilla 4 normal)
+// Rutas con la conexión exacta: entra en 14 normal -> casa 1..7 -> sale directo sumando en la casilla 4 normal
 function routes(r, p, i, val) {
   const st = p.steps[i], to = st + val, out = {};
   if (st < 0 || st >= END || to > END) return out;
@@ -99,9 +100,10 @@ function routes(r, p, i, val) {
     if (!free(side, n + 1, Math.min(n + val, 7))) return out;
     const rem = n + val;
     if (rem <= 7) {
-      out.h = land(true); // Se mantiene dentro de la casa
+      out.h = land(true); // Sigue dentro de la casa (1 a 7)
     } else {
-      // Sale de la casa: al terminar el 7 de la casa, cae exactamente en la casilla 4 del carril normal
+      // Al salir de la casa (pasa de la casilla 7), los pasos sobrantes caen exactamente a partir de la casilla 4 normal del carril
+      // Distancia recorrida normal equivalente: st (posición actual) + val total
       const normalTarget = st + val;
       if (ownStackCount(p, normalTarget, false) >= 2) return out;
       out.h = { to: normalTarget, inH: false, kills: victims(r, p, normalTarget).length };
@@ -109,17 +111,14 @@ function routes(r, p, i, val) {
     return out;
   }
 
-  // Si va por el carril normal
   if (ownStackCount(p, to, false) < 2) {
     out.n = land(false);
   }
 
-  // Evaluar si en algún paso intermedio cruza una casa
   for (let j = 0; j < val; j++) {
     const side = branchSide(p.ci, st + j, false);
     if (side < 0) continue;
-    // REGLA: Prohibido entrar a la casa propia al sembrar o salir
-    if (side === p.ci && st <= 3) continue; 
+    if (side === p.ci && st <= 3) continue; // Prohibido meterse a la casa propia al sembrar
 
     const rem = val - j;
     const stayInH = rem <= 7;
@@ -131,7 +130,6 @@ function routes(r, p, i, val) {
   return out;
 }
 
-// Números para sembrar
 function enterOpt(r) {
   if (r.bonus || r.used[0] || r.used[1]) return null;
   const p = cur(r);
