@@ -313,8 +313,9 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
   }
 
   // 2. Cuadrantes de esquina y escaleras de llegada (casillas 1 a 7 de color)
+  // Cada cuadrante es de 4x4 y coincide exactamente con las casillas de su escalera.
   const PATH = [[2,2],[3,2],[3,3],[4,3],[4,4],[5,4],[5,5]];
-  const QBOX = [[2,2],[2,11],[11,11],[11,2]];
+  const QBOX = [[2,2],[2,12],[12,12],[12,2]];
   for (let ci = 0; ci < 4; ci++) {
     const [qx, qy] = QBOX[ci];
     const q = mk('quad q' + ci, '<span class="qname" id="qn' + ci + '">' + COL[ci][0] + '</span>'); q.id = 'q' + ci;
@@ -328,13 +329,13 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
     });
   }
 
-  // 3. Casas moradas (1 al 7) en puente continuo sin huecos:
-  // - La casilla 14 normal está en [1, 6] -> Casa 1 está pegada en [2, 6] y Casa 2 en [3, 6]
-  // - Baja en línea continua por columna 3: Casa 3 en [3, 7], Casa 4 en [3, 8], Casa 5 en [3, 9], Casa 6 en [3, 10]
-  // - Dobla a Casa 7 en [2, 10], quedando pegada a la casilla 4 normal ([1, 11])
-  // - Adentro del puente (columna 2, filas 7..9) queda encajada la base con las 4 fichas
-  const HPOS = [[2,6],[3,6],[3,7],[3,8],[3,9],[3,10],[2,10]];
-  const BPOS = [[2,7],[2,9]];
+  // 3. Casas moradas (1 al 7) en puente continuo sin huecos (en las coordenadas del lado 0: col, fila):
+  // - Casa 1 en [2,7], pegada a la casilla ★ de siembra [1,7] y junto a la casilla 14 [1,6]
+  // - Baja por la columna 3: Casa 2 en [3,7], Casa 3 en [3,8], Casa 4 en [3,9], Casa 5 en [3,10], Casa 6 en [3,11]
+  // - Dobla a Casa 7 en [2,11], justo pegada a la casilla 4 normal [1,11]
+  // - Adentro del puente (columna 2, filas 8..10) queda encajada la base con las 4 fichas
+  const HPOS = [[2,7],[3,7],[3,8],[3,9],[3,10],[3,11],[2,11]];
+  const BPOS = [[2,8],[2,10]];
   for (let s = 0; s < 4; s++) {
     HPOS.forEach(([c, r], idx) => {
       const n = idx + 1;
