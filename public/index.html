@@ -51,7 +51,7 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
 @supports (width:1cqw){ #board{--cell:calc((100cqw - 28px) / 15)} }
 .cell{position:relative; min-width:0; min-height:0; background:linear-gradient(#f9ecc9,#efd9a6); border:1px solid var(--line); border-radius:5px; box-shadow:inset 0 -2px 0 rgba(120,80,30,.18)}
 .cell i{position:absolute; inset:0; display:grid; place-items:center; font-style:normal; font-weight:600; font-size:calc(var(--cell)*.5); color:var(--ink); line-height:1}
-.cell.zone{border-color:#8f6cc0; box-shadow:inset 0 0 0 1px rgba(143,108,192,.55)}
+.cell.zone{border-color:#8f6cc0; box-shadow:inset 0 0 0 2px rgba(106,63,163,.65)}
 .cell.col{background:linear-gradient(color-mix(in srgb,var(--c) 85%,#fff),var(--c)); border-color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .cell.col i{color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.55); font-weight:700}
 .toks{position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
@@ -59,27 +59,31 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
 .quad{position:relative; background:color-mix(in srgb,var(--c) 30%,#f2dfb4); border:2px solid color-mix(in srgb,var(--c) 65%,#fff); border-radius:12px; transition:box-shadow .3s,opacity .3s; min-width:0}
 .quad.empty{opacity:.5}
 .quad.act{box-shadow:0 0 0 3px #fff,0 0 20px 5px var(--c)}
-.qname{position:absolute; max-width:64%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:calc(var(--cell)*.46); color:color-mix(in srgb,var(--c) 55%,#2a1608)}
+.qname{position:absolute; max-width:64%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:calc(var(--cell)*.44); color:color-mix(in srgb,var(--c) 55%,#2a1608)}
 .q0 .qname{left:6%; bottom:5%} .q1 .qname{left:6%; top:5%} .q2 .qname{right:6%; top:5%; text-align:right} .q3 .qname{right:6%; bottom:5%; text-align:right}
-.step{position:relative; min-width:0; min-height:0; background:linear-gradient(color-mix(in srgb,var(--c) 80%,#fff),var(--c)); border:max(2px,calc(var(--cell)*.09)) solid #fff; border-radius:7px; box-shadow:0 2px 4px rgba(0,0,0,.4)}
-.step i{position:absolute; inset:0; display:grid; place-items:center; font-style:normal; font-weight:700; font-size:calc(var(--cell)*.5); color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); line-height:1}
+.step{position:relative; min-width:0; min-height:0; background:linear-gradient(color-mix(in srgb,var(--c) 80%,#fff),var(--c)); border:max(2px,calc(var(--cell)*.09)) solid #fff; border-radius:7px; box-shadow:0 2px 4px rgba(0,0,0,.4); z-index:2}
+.step i{position:absolute; inset:0; display:grid; place-items:center; font-style:normal; font-weight:700; font-size:calc(var(--cell)*.48); color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); line-height:1}
 .step.goal{box-shadow:0 0 0 2px #ffd23f,0 3px 6px rgba(0,0,0,.45)}
 
-.arm{display:grid; gap:2px; min-width:0; min-height:0}
-.arm.h{grid-template-columns:repeat(4,1fr); grid-template-rows:.5fr 2fr .5fr}
-.arm.v{grid-template-columns:.5fr 2fr .5fr; grid-template-rows:repeat(4,1fr)}
-.uc{position:relative; display:grid; place-items:center; background:linear-gradient(#8a5bc4,var(--purple)); border:1px solid var(--purple-hi); border-radius:4px; color:#fff; font-weight:600; font-size:calc(var(--cell)*.38); line-height:1}
-.uc i{position:absolute; inset:0; display:grid; place-items:center; font-style:normal; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6)}
-.uc .tk{scale:.58}
-.uc .tk.can{scale:.85}
-.uc .tk.can.pick{scale:1}
-.base{display:grid; grid-template-columns:repeat(2,auto); grid-auto-rows:auto; place-content:center; gap:2px; background:radial-gradient(circle at 50% 35%,#b98650,#7d4d24); border-radius:12px; box-shadow:inset 0 3px 8px rgba(0,0,0,.55)}
-.slot{position:relative; width:calc(var(--cell)*.9); height:calc(var(--cell)*.9); border-radius:50%; background:rgba(0,0,0,.28); box-shadow:inset 0 2px 4px rgba(0,0,0,.6)}
-.seed{position:relative; place-self:center; width:calc(var(--cell)*.96); height:calc(var(--cell)*.96); border-radius:8px;
+/* Brazo de la casa ampliado de 5 casillas de ancho para conectar visualmente la casilla 14 con el 1 y el 7 con la casilla 4 */
+.arm{display:grid; gap:2px; min-width:0; min-height:0; z-index:1}
+.arm.h{grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(5,1fr)}
+.arm.v{grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(3,1fr)}
+.uc{position:relative; display:grid; place-items:center; background:linear-gradient(#8a5bc4,var(--purple)); border:1.5px solid #e6d4ff; border-radius:5px; color:#fff; font-weight:700; font-size:calc(var(--cell)*.42); line-height:1; box-shadow:0 2px 4px rgba(0,0,0,.35)}
+.uc i{position:absolute; inset:0; display:grid; place-items:center; font-style:normal; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.65)}
+.uc.entry{border-color:#ffd23f; box-shadow:inset 0 0 0 1px #ffd23f, 0 2px 4px rgba(0,0,0,.35)}
+.uc.exit{border-color:#4ade80; box-shadow:inset 0 0 0 1px #4ade80, 0 2px 4px rgba(0,0,0,.35)}
+.uc .tk{scale:.72}
+.uc .tk.can{scale:.95}
+.uc .tk.can.pick{scale:1.1}
+.base{display:grid; grid-template-columns:repeat(2,auto); grid-auto-rows:auto; place-content:center; gap:2px; background:radial-gradient(circle at 50% 35%,#b98650,#7d4d24); border-radius:10px; box-shadow:inset 0 3px 8px rgba(0,0,0,.55); padding:2px}
+.slot{position:relative; width:calc(var(--cell)*.78); height:calc(var(--cell)*.78); border-radius:50%; background:rgba(0,0,0,.28); box-shadow:inset 0 2px 4px rgba(0,0,0,.6)}
+/* casilla 0: espacio sin número, solo para sembrar */
+.seed{position:relative; place-self:center; width:calc(var(--cell)*.92); height:calc(var(--cell)*.92); border-radius:8px;
   background:linear-gradient(color-mix(in srgb,var(--c) 75%,#fff),var(--c)); border:max(2px,calc(var(--cell)*.09)) solid #fff;
   box-shadow:0 2px 5px rgba(0,0,0,.5),inset 0 0 0 calc(var(--cell)*.09) rgba(0,0,0,.16)}
 
-#bowl{grid-column:6 / span 5; grid-row:6 / span 5; position:relative; display:grid; place-items:center; z-index:1;
+#bowl{grid-column:6 / span 5; grid-row:6 / span 5; position:relative; display:grid; place-items:center; z-index:2;
   clip-path:polygon(29.3% 0,70.7% 0,100% 29.3%,100% 70.7%,70.7% 100%,29.3% 100%,0 70.7%,0 29.3%);
   background:repeating-linear-gradient(95deg,rgba(120,70,20,.2) 0 3px,transparent 3px 11px),radial-gradient(circle at 40% 30%,#f3d9a3,#d4a96a 68%,#b98445)}
 .pit{width:80%; height:80%; display:flex; align-items:center; justify-content:center; gap:9%; perspective:420px;
@@ -249,38 +253,46 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
   const board = $('board');
   for (let i = 0; i < 56; i++) {
     const [x, y] = xy(i), k = i % 14, s = Math.floor(i / 14);
-    const d = mk('cell' + (k === 0 || k === 8 ? ' col' : '') + (k >= 6 ? ' zone' : ''), '<i>' + label(k) + '</i><div class="toks"></div>');
+    // Resalta de la casilla 14 (k=5) a la casilla 4 (k=9) como la zona conectada con la casa
+    const d = mk('cell' + (k === 0 || k === 8 ? ' col' : '') + (k >= 5 && k <= 9 ? ' zone' : ''), '<i>' + label(k) + '</i><div class="toks"></div>');
     d.id = 'r' + i; d.style.gridColumn = x + 1; d.style.gridRow = y + 1; d.style.setProperty('--c', COL[s][1]); board.appendChild(d);
   }
   const PATH = [[0,0],[1,0],[1,1],[2,1],[2,2],[3,2],[3,3]];
   for (let ci = 0; ci < 4; ci++) {
     const gx0 = ci < 2 ? 1 : 9, gy0 = (ci === 0 || ci === 3) ? 1 : 9;
     const q = mk('quad q' + ci, '<span class="qname" id="qn' + ci + '">' + COL[ci][0] + '</span>'); q.id = 'q' + ci;
-    q.style.gridColumn = (gx0 + 1) + ' / span 5'; q.style.gridRow = (gy0 + 1) + ' / span 5'; q.style.setProperty('--c', COL[ci][1]); board.appendChild(q);
+    q.style.gridColumn = (gx0 + 1) + ' / span 4'; q.style.gridRow = (gy0 + 1) + ' / span 4'; q.style.setProperty('--c', COL[ci][1]); board.appendChild(q);
     PATH.forEach(([x, y], n) => {
       const gx = ci < 2 ? 1 + x : 13 - x, gy = (ci === 0 || ci === 3) ? 1 + y : 13 - y;
       const h = mk('step cell-h' + (n === 6 ? ' goal' : ''), '<i>' + (n + 1) + '</i><div class="toks"></div>');
       h.id = 'h' + ci + '_' + (n + 1); h.style.gridColumn = gx + 1; h.style.gridRow = gy + 1; h.style.setProperty('--c', COL[ci][1]); board.appendChild(h);
     });
   }
-  const AP = (s, d, a) => s === 0 ? [d, a + 1] : s === 1 ? [a + 1, 5 - d] : s === 2 ? [5 - d, 3 - a] : [3 - a, d];
-  const ARM = [['2 / span 4','7 / span 3'],['7 / span 3','11 / span 4'],['11 / span 4','7 / span 3'],['7 / span 3','2 / span 4']];
-  const BASE = [['2 / span 2','2'],['2','2 / span 2'],['2 / span 2','2'],['2','2 / span 2']];
+
+  // Casa en U de 7 casillas:
+  // a=1 está alineado exactamente con la casilla 14 normal (ahí empieza el 1 de la casa)
+  // a=5 está alineado exactamente con la casilla 4 normal (debajo/junto al 7 de la casa está el 4 normal)
+  const AP = (s, d, a) => s === 0 ? [d, a] : s === 1 ? [a, 4 - d] : s === 2 ? [4 - d, 6 - a] : [6 - a, d];
+  const ARM = [['2 / span 3','6 / span 5'],['6 / span 5','12 / span 3'],['12 / span 3','6 / span 5'],['6 / span 5','2 / span 3']];
+  const BASE = [['2 / span 2','3 / span 2'],['2 / span 2','2 / span 2'],['1 / span 2','2 / span 2'],['2 / span 2','1 / span 2']];
+  // Posiciones (d, a) de las 7 casillas de la casa: 1 empieza junto al 14 normal, y 7 termina junto al 4 normal
+  const HPOS = [[1,1],[2,1],[3,1],[3,2],[3,3],[3,4],[2,5]];
   for (let s = 0; s < 4; s++) {
-    const arm = mk('arm ' + (s % 2 === 0 ? 'h' : 'v')); arm.style.gridColumn = ARM[s][0]; arm.style.gridRow = ARM[s][1]; arm.style.setProperty('--c', COL[s][1]); board.appendChild(arm);
-    const put = (d, a, txt, n) => {
-      const [c, r] = AP(s, d, a), u = mk('uc', txt === '' ? '' : String(txt));
-      u.style.gridColumn = c; u.style.gridRow = r;
-      if (n) {
-        u.id = 'u' + s + '_' + n; u.innerHTML = '<i>' + n + '</i><div class="toks"></div>';
-      }
+    const arm = mk('arm ' + (s % 2 === 0 ? 'h' : 'v'));
+    arm.style.gridColumn = ARM[s][0]; arm.style.gridRow = ARM[s][1]; arm.style.setProperty('--c', COL[s][1]);
+    board.appendChild(arm);
+    HPOS.forEach(([d, a], idx) => {
+      const n = idx + 1;
+      const [c, r] = AP(s, d, a);
+      const u = mk('uc' + (n === 1 ? ' entry' : n === 7 ? ' exit' : ''), '<i>' + n + '</i><div class="toks"></div>');
+      u.id = 'u' + s + '_' + n; u.style.gridColumn = c; u.style.gridRow = r;
+      u.title = n === 1 ? 'Casa 1 (entra desde casilla 14)' : n === 7 ? 'Casa 7 (sale a casilla 4)' : 'Casa ' + n;
       arm.appendChild(u);
-    };
-    for (let d = 1; d <= 4; d++) put(d, 0, d, d);
-    for (let d = 4; d >= 2; d--) put(d, 2, 9 - d, 9 - d);
-    put(4, 1, '');
-    const [zc, zr] = AP(s, 1, 1), z = mk('seed', '<div class="toks"></div>');
+    });
+    // Casilla 0 de siembra (entre la 14 y la 1)
+    const [zc, zr] = AP(s, 1, 2), z = mk('seed', '<div class="toks"></div>');
     z.id = 'z' + s; z.style.gridColumn = zc; z.style.gridRow = zr; z.setAttribute('aria-label', 'Casilla 0, de siembra'); arm.appendChild(z);
+    // Base donde esperan las 4 fichas
     const base = mk('base'); base.style.gridColumn = BASE[s][0]; base.style.gridRow = BASE[s][1];
     for (let i = 0; i < 4; i++) { const sl = mk('slot', '<div class="toks"></div>'); sl.id = 's' + s + '_' + i; base.appendChild(sl); }
     arm.appendChild(base);
@@ -296,8 +308,8 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
   const where = (ci, st, i, inH) => {
     if (st < 0) return $('s' + ci + '_' + i);
     if (st >= END) return $('ts' + ci + '_' + i);
+    if (inH && typeof inH === 'object') return $('u' + inH.side + '_' + inH.pos);
     if (st === 0) return $('z' + ci);
-    if (inH) { const x = ringIdx(ci, st); return $('u' + Math.floor(x / 14) + '_' + (x % 14 - 5)); }
     return st <= RING ? $('r' + ringIdx(ci, st)) : $('h' + ci + '_' + (st - RING));
   };
   const token = (ci, i) => { const t = document.createElement('b'); t.className = 'tk'; t.textContent = i + 1; t.style.setProperty('--tc', COL[ci][1]); t.style.setProperty('--fg', COL[ci][2]); return t; };
@@ -444,10 +456,10 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
     if (s.phase === 'roll') return 'Tu turno: toca “Tirar dados”';
     if (s.phase !== 'move' || rolling) return '';
     const L = s.legal, canMove = L.amts.some(a => a.pieces.length);
-    if (pend !== null) return 'Elige por dónde va la ficha: carril normal (se puede matar) o casa (segura, sin saltar fichas)';
+    if (pend !== null) return 'Elige por dónde va la ficha: carril normal (se puede matar) o casa (entra por el 14 y sale al 4)';
     if (L.bonus) return '¡Bono de +10!: toca la ficha que quieres avanzar 10 casillas';
     if (L.enter && !canMove) return L.enter.n === 2 ? '¡Doble seis! Toca una ficha de tu celda para sembrar 2 a la vez' : 'Toca una ficha de tu celda para sembrarla';
-    if (canMove && L.amts.some(a => a.pieces.some(p => Object.keys(p.rt).length > 1))) return 'Elige un dado y toca la ficha; si puede entrar a una casa, te dejo elegir el camino';
+    if (canMove && L.amts.some(a => a.pieces.some(p => Object.keys(p.rt).length > 1))) return 'Elige un dado y toca la ficha; si pasa por el 14 rival, puedes entrar a su casa';
     return 'Elige un dado y toca la ficha que quieres mover';
   }
 
@@ -474,7 +486,7 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
         t.onclick = () => pick(i);
         t.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); } };
       }
-      const el = where(p.ci, st, i, p.inH[i]); (el.querySelector('.toks') || el).appendChild(t);
+      const el = where(p.ci, st, i, p.inH[i]); if (el) (el.querySelector('.toks') || el).appendChild(t);
     }));
     const byCi = {}; s.players.forEach(p => { byCi[p.ci] = p; });
     for (let ci = 0; ci < 4; ci++) {
@@ -503,7 +515,7 @@ input{background:#fff8e6; border:2px solid #8a5a2b; border-radius:14px; padding:
     if (mine && s.phase === 'move' && !rolling) {
       const a = s.legal.amts.find(x => x.key === selKey), pc = (pend !== null && a) ? a.pieces.find(p => p.i === pend) : null;
       if (pc && Object.keys(pc.rt).length > 1) {
-        [['n','Carril normal'],['h','Casa (puente)']].forEach(([k, txt]) => {
+        [['n','Carril normal'],['h','Casa (14 → 1..7 → 4)']].forEach(([k, txt]) => {
           if (pc.rt[k] === undefined) return;
           const b = document.createElement('button');
           b.textContent = txt + (pc.rt[k] > 0 ? ' · mata' : ''); if (pc.rt[k] > 0) b.classList.add('kill');
