@@ -52,9 +52,13 @@ function houseOcc(r) {
   return o;
 }
 
-function branchSide(ci, s) {
-  if (s === 0) return ci;
-  if (s >= 1 && s <= 50) { const x = ringIdx(ci, s); if (x % 14 === 5) return Math.floor(x / 14); }
+// Retorna el lado (0..3) cuya casa se cruza exactamente en el paso s del carril normal (la entrada es al pasar la casilla 14, que equivale a x % 14 == 5)
+function branchSide(ci, s, fromInH) {
+  if (fromInH) return -1; // Si ya va dentro de la casa, no vuelve a ramificar
+  if (s >= 1 && s <= 50) {
+    const x = ringIdx(ci, s);
+    if (x % 14 === 5) return Math.floor(x / 14);
+  }
   return -1;
 }
 
@@ -82,7 +86,7 @@ function ownStackCount(p, to, inH) {
   return c;
 }
 
-// Rutas posibles de una ficha con un valor (Corregido: salida exacta desde la casa al carril normal)
+// Rutas posibles de una ficha con un valor (Corregido: entrada en casilla 14 / salida exacta en casilla 4 normal, prohibido entrar a casa propia al sembrar)
 function routes(r, p, i, val) {
   const st = p.steps[i], to = st + val, out = {};
   if (st < 0 || st >= END || to > END) return out;
@@ -95,27 +99,28 @@ function routes(r, p, i, val) {
     if (!free(side, n + 1, Math.min(n + val, 7))) return out;
     const rem = n + val;
     if (rem <= 7) {
-      out.h = land(true); // Se queda dentro de la casa
+      out.h = land(true); // Se mantiene dentro de la casa
     } else {
-      // Sale de la casa (llega al 7 y los pasos extra caen en el carril normal exterior)
-      const extra = rem - 7;
-      // El paso 7 de la casa corresponde a la entrada de la casa (casilla 14 del carril del lado correspondiente)
-      // Calculamos la posición equivalente en el anillo exterior
-      const entryRingPos = side * 14; // posición base del lado
-      // Desde ahí avanza los pasos extra en el carril normal
-      const normalTarget = st + (7 - n) + extra; // recálculo exacto de la distancia total recorrida en pasos
+      // Sale de la casa: al terminar el 7 de la casa, cae exactamente en la casilla 4 del carril normal (equivalente a st + val total)
+      const normalTarget = st + val;
       if (ownStackCount(p, normalTarget, false) >= 2) return out;
       out.h = { to: normalTarget, inH: false, kills: victims(r, p, normalTarget).length };
     }
     return out;
   }
 
+  // Si va por el carril normal
   if (ownStackCount(p, to, false) < 2) {
     out.n = land(false);
   }
+
+  // Evaluar si en algún paso intermedio cruza una casa
   for (let j = 0; j < val; j++) {
-    const side = branchSide(p.ci, st + j);
+    const side = branchSide(p.ci, st + j, false);
     if (side < 0) continue;
+    // REGLA: No se puede entrar a la casa propia (side === p.ci) al sembrar o pasar por ahí si recién sale
+    if (side === p.ci && st <= 3) continue; 
+
     const rem = val - j;
     const stayInH = rem <= 7;
     if (free(side, 1, Math.min(rem, 7)) && (stayInH || ownStackCount(p, to, false) < 2)) {
@@ -334,7 +339,6 @@ wss.on('connection', ws => {
     if (m.t === 'move' && r.phase === 'move' && cur(r) === ws.seat) {
       const p = ws.seat, i = m.i | 0; if (i < 0 || i > 3) return;
 
-      // REGLA 1: Prioridad absoluta de siembra si hay opción obligatoria de sembrar
       const mandatoryEnter = enterOpt(r);
       if (mandatoryEnter && m.key !== 'e') {
         p.steps = [...r.rollSnap.steps];
