@@ -14,7 +14,7 @@ const AL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset/utf-8',
+  '.css': 'text/css; charset=utf-8',
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
@@ -43,10 +43,11 @@ const cur = r => r.seats[r.cur];
 const send = (ws, o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
 const note = (r, text) => { r.notice = { n: r.notice.n + 1, text }; };
 
-// Calcula el paso "st" (1..51) del jugador "ci" correspondiente a la casilla 4 normal del lado "side"
+// Paso (st) de la casilla 3 normal del lado "side" para el jugador "ci".
+// Es la primera casilla del carril después de la casa 7.
 function exitHouseStep(ci, side) {
   const d = (side - ci + 4) % 4;
-  return d * 14 + 4; // En su propio lado (d=0) es st=4; en los otros lados es 18, 32 o 46 (todas son la casilla 4 de ese lado)
+  return d * 14 + 3; // propio lado: st=3; otros lados: 17, 31 o 45 (casilla 3 de ese lado)
 }
 
 // ---- reglas ----
@@ -93,7 +94,7 @@ function ownStackCount(p, to) {
 
 // Rutas posibles de una ficha con un valor:
 // - Entrar a la casa: desde la casilla 14 normal se cuenta 1, 2, 3, 4, 5, 6, 7 de la casa.
-// - Salir de la casa: del 7 de la casa el siguiente paso es la casilla 4 normal de ese mismo lado (y sigue 5, 6...).
+// - Salir de la casa: del 7 de la casa el siguiente paso es la casilla 3 normal de ese mismo lado (y sigue 4, 5, 6...).
 function routes(r, p, i, val) {
   const st = p.steps[i], h = p.inH[i], out = {};
   if (st < 0 || st >= END) return out;
@@ -108,9 +109,9 @@ function routes(r, p, i, val) {
     if (newPos <= 7) {
       out.h = { to: st, inH: { side, pos: newPos }, kills: 0 };
     } else {
-      // Sale del 7 de la casa directo a la casilla 4 normal de ese lado:
-      // Con el paso que sale del 7 pisa la casilla 4 normal, y si le sobran pasos sigue avanzando (5, 6...)
-      const over = newPos - 7; // over=1 -> cae en casilla 4; over=2 -> cae en casilla 5...
+      // Sale del 7 de la casa directo a la casilla 3 normal de ese lado:
+      // over=1 -> cae en la casilla 3; over=2 -> casilla 4; over=3 -> casilla 5...
+      const over = newPos - 7;
       const normalTarget = exitHouseStep(p.ci, side) + (over - 1);
       if (normalTarget <= END && ownStackCount(p, normalTarget) < 2) {
         out.h = { to: normalTarget, inH: null, kills: victims(r, p, normalTarget).length };
@@ -385,7 +386,7 @@ wss.on('connection', ws => {
         a.use.forEach(u => { r.used[u] = true; });
         if (a.bonus) r.bonus = 0;
         n = res.inH ? 0 : hitAll(r, p, res.to);
-        txt = (a.bonus ? 'avanza los +' + BONUS + ' del bono' : res.to === END ? 'libera una ficha' : 'mueve ' + a.val) + (k === 'h' ? (res.inH ? ` por la casa (casilla ${res.inH.pos})` : ' saliendo de la casa a partir del 4') : '');
+        txt = (a.bonus ? 'avanza los +' + BONUS + ' del bono' : res.to === END ? 'libera una ficha' : 'mueve ' + a.val) + (k === 'h' ? (res.inH ? ` por la casa (casilla ${res.inH.pos})` : ' saliendo de la casa a partir del 3') : '');
       }
 
       if (n > 0) {
